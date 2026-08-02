@@ -37,3 +37,9 @@ updates:
               update-types:
                   - "patch"
                   - "minor"
+          securityProd:
+              applies-to: security-updates
+              dependency-type: production
+          securityDev:
+              applies-to: security-updates
+              dependency-type: development
