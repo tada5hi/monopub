@@ -22,8 +22,9 @@ import type {
 } from './core/index.ts';
 import { REGISTRY_URL } from './constants.ts';
 import {
-    isPackagePublishable, 
-    isPackagePublished, 
+    correctLatestDistTag,
+    isPackagePublishable,
+    isPackagePublished,
     publishPackage,
 } from './package.ts';
 import { isError } from './utils/index.ts';
@@ -77,6 +78,7 @@ export async function publish(options: PublishOptions = {}): Promise<Package[]> 
     const cwd = options.cwd || process.cwd();
     const registry = options.registry || REGISTRY_URL;
     const rootPackage = options.rootPackage ?? true;
+    const fixLatest = options.fixLatest ?? true;
 
     const fileSystem = options.fileSystem ?? new NodeFileSystem();
     const registryClient = options.registryClient ?? new HapicRegistryClient();
@@ -161,6 +163,18 @@ export async function publish(options: PublishOptions = {}): Promise<Package[]> 
             registry,
             tag: options.tag,
         });
+
+        if (p.published && fixLatest) {
+            try {
+                const corrected = await correctLatestDistTag(p, registryClient, { registry, token });
+                if (corrected) {
+                    logger.info(`Repointed latest dist-tag of ${p.content.name} to ${p.content.version}`);
+                }
+            } catch (e) {
+                const message = isError(e) ? e.message : String(e);
+                logger.warn(`Failed to correct latest dist-tag for ${p.content.name}: ${message}`);
+            }
+        }
     }
 
     return unpublishedPackages

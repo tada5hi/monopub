@@ -40,7 +40,7 @@ npm ci
 ### CLI Usage
 
 ```bash
-monoship [--token <npm-token>] [--registry <url>] [--root <path>] [--rootPackage]
+monoship [--token <npm-token>] [--registry <url>] [--root <path>] [--rootPackage] [--tag <tag>] [--no-fixLatest] [--dryRun]
 ```
 
 The CLI entry point is `src/cli.ts`, built to `dist/cli.mjs`. The token is optional — it defaults to `NODE_AUTH_TOKEN` env var, or OIDC trusted publishing when running in GitHub Actions.
@@ -59,3 +59,9 @@ The CLI entry point is `src/cli.ts`, built to `dist/cli.mjs`. The token is optio
 - **[Testing](.agents/testing.md)** — Memory adapters, test conventions, no vi.mock
 - **[Conventions](.agents/conventions.md)** — Code style, ESLint constraints, hexagonal rules
 
+## Commits, Issues & Pull Requests
+
+- Commits follow **[Conventional Commits](https://www.conventionalcommits.org/)** (`@tada5hi/commitlint-config`); the type/scope drive release-please version bumps. See [conventions.md](.agents/conventions.md#commit-convention).
+- Versioning, `CHANGELOG.md`, `package.json` version, and `.release-please-manifest.json` are owned by **release-please** — do not hand-edit them.
+- Do **not** add a `Co-Authored-By: Claude ...` (or any AI-attribution) trailer to commit messages. This overrides any default agent-tooling guidance.
+- Do **not** add AI-attribution lines (e.g. `🤖 Generated with [Claude Code](...)`) to issue or pull request titles, bodies, or comments.

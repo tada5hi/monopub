@@ -39,10 +39,13 @@ Adapters: `NodeFileSystem` (node:fs + fast-glob), `MemoryFileSystem` (in-memory 
 ```typescript
 interface IRegistryClient {
     getPackument(name: string, options: { registry: string; token?: string }): Promise<Packument>;
+    putDistTag(name: string, tag: string, version: string, options: { registry: string; token?: string }): Promise<void>;
 }
 ```
 
 Adapters: `HapicRegistryClient` (hapic HTTP), `MemoryRegistryClient` (in-memory store)
+
+`putDistTag` issues `PUT <registry>/-/package/<name>/dist-tags/<tag>` with the version as JSON-encoded string body — the endpoint `npm dist-tag add` uses. `MemoryRegistryClient` records calls in its public `distTags` array and updates the stored packument.
 
 ### IPackagePublisher (`core/publisher/types.ts`)
 
@@ -100,6 +103,8 @@ type PublishOptions = {
     rootPackage?: boolean;
     registry?: string;
     token?: string;           // backward compat: wrapped in MemoryTokenProvider
+    tag?: string;
+    fixLatest?: boolean;      // default true: post-publish latest dist-tag correction
     dryRun?: boolean;
     fileSystem?: IFileSystem;
     registryClient?: IRegistryClient;
@@ -130,7 +135,9 @@ Processing:
      b. Check registry via IRegistryClient.getPackument()
      c. If unpublished & modified: write package.json via IFileSystem (unless dryRun)
   6. Publish via IPackagePublisher.publish(packagePath, manifest, options)
-  7. Collect results
+  7. After each successful publish: correct the latest dist-tag if it trails
+     behind an older prerelease (IRegistryClient.putDistTag, unless fixLatest: false)
+  8. Collect results
 
 Output:
   └── Array of published Package objects
@@ -168,6 +175,21 @@ Shells out to `npm publish` with flags derived from the options object:
 | `409 Conflict` | GitHub Packages 409 |
 
 When a conflict is detected, `publish()` returns `false` instead of throwing. Non-conflict errors are wrapped in `PublishError`.
+
+### Latest Dist-Tag Correction (`correctLatestDistTag()`)
+
+npm pins the `latest` dist-tag on a package's **first** publish regardless of the `--tag` / `publishConfig.tag` used, and `latest` can only be repointed, never removed. For packages that only publish prereleases, `latest` would stay stuck at the first version forever.
+
+`correctLatestDistTag()` in `src/package.ts` runs after each successful publish (unless `fixLatest: false`):
+
+1. Fetch the packument via `IRegistryClient.getPackument()` (404 → nothing to do)
+2. Skip when `latest` is missing, invalid semver, equals the published version, or is **not** a prerelease — a `latest` claimed by a stable release is never touched
+3. Skip when `latest` is not older than the published version
+4. Otherwise repoint via `IRegistryClient.putDistTag(name, 'latest', version)`
+
+Failures are logged as warnings in `module.ts` — the publish itself already succeeded and is never rolled back or failed by a correction error.
+
+**Known limitation**: the read (`getPackument`) and write (`putDistTag`) are not atomic. The npm dist-tags endpoint supports no conditional writes (no ETag/If-Match/`_rev`), so a publish from *another process* landing between the two calls could theoretically move `latest` to a stable that the correction then overwrites. Corrections are serialized per package within a run; the cross-process race is inherent to the registry API (same as `npm dist-tag add`) and requires concurrent publishes of the same package — a broken release setup regardless.
 
 ### NpmPublisher (fallback)
 
@@ -272,5 +294,6 @@ Duck-type guards (`isRegistryError()`, `isError()`, `isObject()`) are used inste
 - Invalid package configurations (missing name, version) cause the package to be skipped
 - OIDC failures in `ChainTokenProvider` propagate (the chain only falls through on `undefined` return, not on thrown errors)
 - Non-conflict publish failures are wrapped in `PublishError` with the original error as `cause`
+- Latest dist-tag correction failures are logged as warnings — they never fail a run whose publishes succeeded
 - Invalid root `package.json` JSON produces a descriptive error message
 - Invalid registry URLs are caught in the CLI before any publish attempt

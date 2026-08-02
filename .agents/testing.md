@@ -23,14 +23,15 @@ Test configuration is in `test/vitest.config.ts`. Tests are located in `test/uni
 ```
 test/
 ├── unit/
-│   ├── module.spec.ts              # Publish orchestrator (10 tests)
-│   ├── package.spec.ts             # Package logic (17 tests)
-│   ├── package-dependency.spec.ts  # Workspace dep resolution (7 tests)
-│   ├── npm-cli-publisher.spec.ts   # NpmCliPublisher (18 tests)
+│   ├── module.spec.ts              # Publish orchestrator (21 tests)
+│   ├── package.spec.ts             # Package logic (32 tests)
+│   ├── package-dependency.spec.ts  # Workspace dep resolution (10 tests)
+│   ├── npm-cli-publisher.spec.ts   # NpmCliPublisher (21 tests)
 │   ├── resolve-publisher.spec.ts   # Publisher resolution (5 tests)
-│   ├── oidc-token-provider.spec.ts # OIDC flow (8 tests)
+│   ├── oidc-token-provider.spec.ts # OIDC flow (13 tests)
 │   ├── chain-token-provider.spec.ts # Chain fallback (4 tests)
-│   └── token-provider.spec.ts      # Static/Env/Memory providers (6 tests)
+│   ├── token-provider.spec.ts      # Static/Env/Memory providers (6 tests)
+│   └── utils.spec.ts               # isObject/isError helpers (9 tests)
 ├── data/                           # Test fixture data
 │   ├── package.json                # Mock monorepo root
 │   └── packages/
@@ -77,7 +78,7 @@ const packages = await publish({
 | Adapter                | What it fakes                     | Test utility                           |
 |------------------------|-----------------------------------|----------------------------------------|
 | `MemoryFileSystem`     | File reads, writes, glob          | Constructor accepts `Record<path, content>` |
-| `MemoryRegistryClient` | Registry packument queries        | Constructor accepts `Record<name, Packument>`, throws `RegistryError(404)` for missing packages |
+| `MemoryRegistryClient` | Registry packument queries, dist-tag updates | Constructor accepts `Record<name, Packument>`, throws `RegistryError(404)` for missing packages; `.distTags` array records all `putDistTag` calls |
 | `MemoryPublisher`      | Publish                           | `.published` array records all publish calls, returns `true` |
 | `MemoryTokenProvider`  | Token resolution                  | Constructor accepts optional token string |
 | `NoopLogger`           | Logging output                    | All methods are no-ops                  |
@@ -101,11 +102,12 @@ const provider = new OidcTokenProvider({
 
 ## Coverage
 
-Coverage reports are generated with `@vitest/coverage-v8`. Current coverage: 75 tests across 8 files.
+Coverage reports are generated with `@vitest/coverage-v8`. Current coverage: 121 tests across 9 files.
 
 Areas covered:
 - Full publish pipeline (publish, skip, private, dryRun, workspace deps, invalid JSON)
 - Package publishability, version checking, transient vs 404 registry errors
+- Latest dist-tag correction (repoint on trailing prerelease, stable `latest` untouched, `fixLatest: false` opt-out, warn-and-continue on failure)
 - Workspace protocol resolution (^, ~, *)
 - OIDC token flow (fetch, exchange, cache, errors, audience, encoding)
 - Token provider chain fallback

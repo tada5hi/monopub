@@ -15,9 +15,6 @@ export class HapicRegistryClient implements IRegistryClient {
         name: string,
         options: { registry: string; token?: string },
     ): Promise<Packument> {
-        const path = encodeURIComponent(name)
-            .replace(/^%40/, '@');
-
         const headers: Record<string, any> = { ACCEPT: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*' };
 
         if (options.token) {
@@ -26,7 +23,7 @@ export class HapicRegistryClient implements IRegistryClient {
 
         try {
             const response = await hapic.get(
-                new URL(path, options.registry || REGISTRY_URL).toString(),
+                new URL(this.encodeName(name), options.registry || REGISTRY_URL).toString(),
                 { headers },
             );
 
@@ -38,5 +35,42 @@ export class HapicRegistryClient implements IRegistryClient {
 
             throw new RegistryError(`Registry request failed for ${name}`, 500);
         }
+    }
+
+    async putDistTag(
+        name: string,
+        tag: string,
+        version: string,
+        options: { registry: string; token?: string },
+    ): Promise<void> {
+        const path = `-/package/${this.encodeName(name)}/dist-tags/${encodeURIComponent(tag)}`;
+
+        // The npm registry expects the version as a JSON encoded string body.
+        const headers: Record<string, any> = { 'CONTENT-TYPE': 'application/json' };
+
+        if (options.token) {
+            headers.AUTHORIZATION = `Bearer ${options.token}`;
+        }
+
+        try {
+            await hapic.put(
+                new URL(path, options.registry || REGISTRY_URL).toString(),
+                JSON.stringify(version),
+                { headers },
+            );
+        } catch (e) {
+            if (isClientError(e)) {
+                throw new RegistryError(e.message, e.statusCode || 500);
+            }
+
+            throw new RegistryError(`Registry request failed for ${name}`, 500);
+        }
+    }
+
+    // ----------------------------------------------------
+
+    private encodeName(name: string): string {
+        return encodeURIComponent(name)
+            .replace(/^%40/, '@');
     }
 }

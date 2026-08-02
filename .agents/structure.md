@@ -103,7 +103,7 @@ monoship/
 |------------------------|----------------------------------------------------------------------|
 | `cli.ts`               | Composition root: parses CLI flags, wires adapters, invokes publish  |
 | `module.ts`            | Top-level orchestrator: resolves adapters, reads workspaces, filters, publishes |
-| `package.ts`           | Business logic: publishability check, version check, publish call    |
+| `package.ts`           | Business logic: publishability check, version check, publish call, latest dist-tag correction |
 | `package-dependency.ts`| Pure logic: rewrites `workspace:` protocol deps to concrete versions |
 | `constants.ts`         | Default registry URLs                                                |
 | `types.ts`             | `PublishOptions` type (references all port interfaces)               |
@@ -118,7 +118,7 @@ Each folder under `src/core/` contains a port interface (`types.ts`), one or mor
 | Domain           | Port Interface      | Key Types                    |
 |------------------|---------------------|------------------------------|
 | `filesystem/`    | `IFileSystem`       | readFile, writeFile, glob    |
-| `registry-client/` | `IRegistryClient` | Packument, PackumentVersion, RegistryError |
+| `registry-client/` | `IRegistryClient` | getPackument, putDistTag, Packument, RegistryError |
 | `publisher/`     | `IPackagePublisher` | publish (returns boolean), PublishError |
 | `token-provider/`| `ITokenProvider`    | getToken(packageName, registry) |
 | `logger/`        | `ILogger`           | info, success, warn, error   |
