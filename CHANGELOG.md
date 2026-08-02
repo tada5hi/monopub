@@ -9,6 +9,19 @@
 * **deps:** bump libnpmpublish from 9.0.8 to 9.0.9 ([#131](https://github.com/tada5hi/workspaces-publish/issues/131)) ([10c2d17](https://github.com/tada5hi/workspaces-publish/commit/10c2d177b48f85538768fadfbf5499492e14a7b0))
 * **deps:** bump the minorandpatch group with 14 updates ([#297](https://github.com/tada5hi/workspaces-publish/issues/297)) ([3be75b1](https://github.com/tada5hi/workspaces-publish/commit/3be75b19e990a929dd61f51b3734e549f01c6f47))
 
+## [2.2.0](https://github.com/tada5hi/monoship/compare/v2.1.0...v2.2.0) (2026-08-02)
+
+
+### Features
+
+* correct latest dist-tag when it trails behind a prerelease ([#439](https://github.com/tada5hi/monoship/issues/439)) ([62a376e](https://github.com/tada5hi/monoship/commit/62a376ec29b7826527b7a891323e318d3f7e1a96))
+
+
+### Bug Fixes
+
+* **deps:** bump the majorprod group across 1 directory with 3 updates ([#442](https://github.com/tada5hi/monoship/issues/442)) ([d7c0771](https://github.com/tada5hi/monoship/commit/d7c0771c7c707e288dc41b4b383aa6cebc9d336e))
+* **deps:** bump the minorandpatch group with 7 updates ([#444](https://github.com/tada5hi/monoship/issues/444)) ([dc865f2](https://github.com/tada5hi/monoship/commit/dc865f2edc597f379ce451d44f6e692d06f73814))
+
 ## [2.1.0](https://github.com/tada5hi/monoship/compare/v2.0.2...v2.1.0) (2026-04-29)
 
 
