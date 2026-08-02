@@ -50,7 +50,7 @@ npx monoship \
 | `--root <root>` | `string` | `process.cwd()` | Directory where the root `package.json` is located. |
 | `--rootPackage` | `boolean` | `true` | Also consider the root package for publishing (skipped if `private: true` or missing `name`/`version`). |
 | `--tag <tag>` | `string` | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version` (e.g. `1.0.0-beta.0` → `beta`). Stable versions default to `latest`. |
-| `--no-fixLatest` | `boolean` | `false` | Disable the automatic [`latest` dist-tag correction](#latest-dist-tag-correction). |
+| `--fixLatest` | `boolean` | `true` | Automatic [`latest` dist-tag correction](#latest-dist-tag-correction). Disable with `--no-fixLatest`. |
 
 ### `latest` Dist-Tag Correction
 

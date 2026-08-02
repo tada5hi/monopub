@@ -35,16 +35,18 @@ export class MemoryRegistryClient implements IRegistryClient {
     }
 
     async putDistTag(name: string, tag: string, version: string): Promise<void> {
+        const packument = this.items.get(name);
+        if (!packument) {
+            throw new RegistryError(`Package not found: ${name}`, 404);
+        }
+
         this.distTags.push({
             name,
             tag,
             version,
         });
 
-        const packument = this.items.get(name);
-        if (packument) {
-            packument['dist-tags'][tag] = version;
-        }
+        packument['dist-tags'][tag] = version;
     }
 
     addPackument(name: string, packument: Packument): void {

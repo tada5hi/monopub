@@ -189,6 +189,8 @@ npm pins the `latest` dist-tag on a package's **first** publish regardless of th
 
 Failures are logged as warnings in `module.ts` — the publish itself already succeeded and is never rolled back or failed by a correction error.
 
+**Known limitation**: the read (`getPackument`) and write (`putDistTag`) are not atomic. The npm dist-tags endpoint supports no conditional writes (no ETag/If-Match/`_rev`), so a publish from *another process* landing between the two calls could theoretically move `latest` to a stable that the correction then overwrites. Corrections are serialized per package within a run; the cross-process race is inherent to the registry API (same as `npm dist-tag add`) and requires concurrent publishes of the same package — a broken release setup regardless.
+
 ### NpmPublisher (fallback)
 
 Uses `libnpmpack(packagePath)` to create a tarball, then `libnpmpublish.publish(manifest, tarball, options)`. This adapter receives the auth token and registry via the options object directly (libnpmpublish's native format: `{ '//registry.npmjs.org/:_authToken': 'token' }`).
