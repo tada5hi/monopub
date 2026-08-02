@@ -11,8 +11,9 @@ import {
     RegistryError,
 } from '../../src/core/index.ts';
 import {
-    isPackagePublishable, 
-    isPackagePublished, 
+    correctLatestDistTag,
+    isPackagePublishable,
+    isPackagePublished,
     publishPackage,
 } from '../../src/package.ts';
 import type { IRegistryClient, Package, Packument } from '../../src/core/index.ts';
@@ -128,6 +129,9 @@ describe('src/package', () => {
                 async getPackument(): Promise<Packument> {
                     throw new RegistryError('Internal Server Error', 500);
                 },
+                async putDistTag(): Promise<void> {
+                    // noop
+                },
             };
             const pkg: Package = {
                 path: '/project/packages/a',
@@ -141,6 +145,9 @@ describe('src/package', () => {
             const registry: IRegistryClient = {
                 async getPackument(): Promise<Packument> {
                     throw new RegistryError('Package not found', 404);
+                },
+                async putDistTag(): Promise<void> {
+                    // noop
                 },
             };
             const pkg: Package = {
@@ -160,6 +167,117 @@ describe('src/package', () => {
             };
 
             await expect(isPackagePublished(pkg, registry, { registry: 'https://registry.npmjs.org/' })).rejects.toThrow('Name or version attribute is missing');
+        });
+    });
+
+    describe('correctLatestDistTag', () => {
+        const registryOptions = { registry: 'https://registry.npmjs.org/' };
+
+        function createPackage(version: string): Package {
+            return {
+                path: '/project/packages/a',
+                content: { name: 'pkg-a', version },
+            };
+        }
+
+        function createRegistry(distTags: Record<string, string>) {
+            return new MemoryRegistryClient({
+                'pkg-a': {
+                    name: 'pkg-a',
+                    'dist-tags': distTags,
+                    versions: {},
+                },
+            });
+        }
+
+        it('should repoint latest when it trails behind an older prerelease', async () => {
+            const registry = createRegistry({
+                latest: '2.0.0-beta.0',
+                beta: '2.0.0-beta.12',
+            });
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.13'), registry, registryOptions);
+
+            expect(result).toBe(true);
+            expect(registry.distTags).toEqual([
+                {
+                    name: 'pkg-a',
+                    tag: 'latest',
+                    version: '2.0.0-beta.13',
+                },
+            ]);
+
+            const packument = await registry.getPackument('pkg-a');
+            expect(packument['dist-tags'].latest).toEqual('2.0.0-beta.13');
+        });
+
+        it('should repoint latest when a stable claims it from an older prerelease', async () => {
+            const registry = createRegistry({ latest: '1.0.0-beta.5' });
+
+            const result = await correctLatestDistTag(createPackage('1.0.0'), registry, registryOptions);
+
+            expect(result).toBe(true);
+            expect(registry.distTags.length).toEqual(1);
+        });
+
+        it('should not touch latest pointing at a stable version', async () => {
+            const registry = createRegistry({ latest: '1.0.0' });
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.0'), registry, registryOptions);
+
+            expect(result).toBe(false);
+            expect(registry.distTags.length).toEqual(0);
+        });
+
+        it('should do nothing when latest already points at the published version', async () => {
+            const registry = createRegistry({ latest: '2.0.0-beta.0' });
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.0'), registry, registryOptions);
+
+            expect(result).toBe(false);
+            expect(registry.distTags.length).toEqual(0);
+        });
+
+        it('should do nothing when latest points at a newer prerelease', async () => {
+            const registry = createRegistry({ latest: '2.0.0-beta.5' });
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.4'), registry, registryOptions);
+
+            expect(result).toBe(false);
+            expect(registry.distTags.length).toEqual(0);
+        });
+
+        it('should return false when the package is not in the registry', async () => {
+            const registry = new MemoryRegistryClient();
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.0'), registry, registryOptions);
+
+            expect(result).toBe(false);
+            expect(registry.distTags.length).toEqual(0);
+        });
+
+        it('should return false when latest is not valid semver', async () => {
+            const registry = createRegistry({ latest: 'not-a-version' });
+
+            const result = await correctLatestDistTag(createPackage('2.0.0-beta.0'), registry, registryOptions);
+
+            expect(result).toBe(false);
+            expect(registry.distTags.length).toEqual(0);
+        });
+
+        it('should propagate transient registry errors (e.g. 500)', async () => {
+            const registry: IRegistryClient = {
+                async getPackument(): Promise<Packument> {
+                    throw new RegistryError('Internal Server Error', 500);
+                },
+                async putDistTag(): Promise<void> {
+                    // noop
+                },
+            };
+
+            await expect(
+                correctLatestDistTag(createPackage('2.0.0-beta.0'), registry, registryOptions),
+            ).rejects.toThrow(RegistryError);
         });
     });
 

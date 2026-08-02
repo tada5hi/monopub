@@ -19,6 +19,7 @@ export type PublishOptions = {
     registry?: string,
     token?: string,
     tag?: string,
+    fixLatest?: boolean,
     dryRun?: boolean,
 
     fileSystem?: IFileSystem,

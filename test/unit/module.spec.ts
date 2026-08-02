@@ -199,6 +199,107 @@ describe('src/module', () => {
         expect(a?.options.tag).toBeUndefined();
     });
 
+    it('should repoint latest dist-tag when it trails behind an older prerelease', async () => {
+        const registryClient = new MemoryRegistryClient({
+            solo: {
+                name: 'solo',
+                'dist-tags': {
+                    latest: '2.0.0-beta.0',
+                    beta: '2.0.0-beta.0',
+                },
+                versions: { '2.0.0-beta.0': { name: 'solo', version: '2.0.0-beta.0' } },
+            },
+        });
+        const fs = new MemoryFileSystem({
+            '/project/package.json': JSON.stringify({
+                name: 'solo',
+                version: '2.0.0-beta.1',
+            }),
+        });
+
+        const packages = await publish(createTestOptions({
+            fileSystem: fs,
+            registryClient,
+        }));
+
+        expect(packages.length).toEqual(1);
+        expect(registryClient.distTags).toEqual([
+            {
+                name: 'solo',
+                tag: 'latest',
+                version: '2.0.0-beta.1',
+            },
+        ]);
+    });
+
+    it('should not repoint latest dist-tag when fixLatest is false', async () => {
+        const registryClient = new MemoryRegistryClient({
+            solo: {
+                name: 'solo',
+                'dist-tags': {
+                    latest: '2.0.0-beta.0',
+                    beta: '2.0.0-beta.0',
+                },
+                versions: { '2.0.0-beta.0': { name: 'solo', version: '2.0.0-beta.0' } },
+            },
+        });
+        const fs = new MemoryFileSystem({
+            '/project/package.json': JSON.stringify({
+                name: 'solo',
+                version: '2.0.0-beta.1',
+            }),
+        });
+
+        const packages = await publish(createTestOptions({
+            fileSystem: fs,
+            registryClient,
+            fixLatest: false,
+        }));
+
+        expect(packages.length).toEqual(1);
+        expect(registryClient.distTags.length).toEqual(0);
+    });
+
+    it('should not repoint latest dist-tag for newly published packages', async () => {
+        const registryClient = new MemoryRegistryClient();
+
+        const packages = await publish(createTestOptions({ registryClient }));
+
+        expect(packages.length).toEqual(3);
+        expect(registryClient.distTags.length).toEqual(0);
+    });
+
+    it('should warn and continue when dist-tag correction fails', async () => {
+        const registryClient = new MemoryRegistryClient({
+            solo: {
+                name: 'solo',
+                'dist-tags': {
+                    latest: '2.0.0-beta.0',
+                    beta: '2.0.0-beta.0',
+                },
+                versions: { '2.0.0-beta.0': { name: 'solo', version: '2.0.0-beta.0' } },
+            },
+        });
+        registryClient.putDistTag = () => Promise.reject(new Error('registry unavailable'));
+        const fs = new MemoryFileSystem({
+            '/project/package.json': JSON.stringify({
+                name: 'solo',
+                version: '2.0.0-beta.1',
+            }),
+        });
+
+        const logger = createSpyLogger();
+        const packages = await publish(createTestOptions({
+            fileSystem: fs,
+            registryClient,
+            logger,
+        }));
+
+        expect(packages.length).toEqual(1);
+        expect(packages[0].published).toBe(true);
+        expect(logger.warnings.some((w) => w.includes('solo') && w.includes('registry unavailable'))).toBe(true);
+    });
+
     it('should not include root package when rootPackage is false', async () => {
         const packages = await publish(createTestOptions({ rootPackage: false }));
 

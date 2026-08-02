@@ -60,6 +60,7 @@ cli
     .option('--root <root>', 'Root directory', { default: process.cwd() })
     .option('--rootPackage', 'Also consider the root package for publishing')
     .option('--tag <tag>', 'Dist-tag to publish under (overrides auto-detected prerelease tag)')
+    .option('--no-fixLatest', 'Do not repoint the latest dist-tag when it trails behind an older prerelease')
     .option('--dryRun', 'Show what would be published without actually publishing')
     .action(async (options: {
         token: string,
@@ -67,6 +68,7 @@ cli
         root: string,
         rootPackage?: boolean,
         tag?: string,
+        fixLatest?: boolean,
         dryRun?: boolean
     }) => {
         try {
@@ -88,6 +90,7 @@ cli
                 cwd: options.root,
                 rootPackage: options.rootPackage ?? true,
                 tag: options.tag,
+                fixLatest: options.fixLatest ?? true,
                 dryRun: options.dryRun,
                 fileSystem: new NodeFileSystem(),
                 registryClient: new HapicRegistryClient(),

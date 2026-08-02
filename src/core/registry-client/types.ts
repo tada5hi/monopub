@@ -18,4 +18,11 @@ export type Packument = {
 
 export interface IRegistryClient {
     getPackument(name: string, options: { registry: string; token?: string }): Promise<Packument>;
+
+    /**
+     * Point a dist-tag of a package to an already published version.
+     *
+     * @throws {RegistryError} When the registry rejects the request.
+     */
+    putDistTag(name: string, tag: string, version: string, options: { registry: string; token?: string }): Promise<void>;
 }

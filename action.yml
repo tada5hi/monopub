@@ -15,6 +15,10 @@ inputs:
     tag:
         description: 'Dist-tag to publish under. Overrides the auto-detected prerelease identifier (e.g. "beta" for 1.0.0-beta.0). Stable versions default to "latest".'
         required: false
+    fix-latest:
+        description: 'Repoint the "latest" dist-tag to the newly published version when it trails behind an older prerelease.'
+        required: false
+        default: 'true'
     dry-run:
         description: 'Show what would be published without actually publishing.'
         required: false
@@ -57,6 +61,7 @@ runs:
               args="--registry ${{ inputs.registry }}"
               if [ "${{ inputs['root-package'] }}" = "true" ]; then args="$args --rootPackage"; else args="$args --no-rootPackage"; fi
               if [ "${{ inputs['dry-run'] }}" = "true" ]; then args="$args --dryRun"; fi
+              if [ "${{ inputs['fix-latest'] }}" = "false" ]; then args="$args --no-fixLatest"; fi
               if [ -n "${{ inputs.tag }}" ]; then args="$args --tag ${{ inputs.tag }}"; fi
 
               node "${{ github.action_path }}/dist/cli.mjs" $args

@@ -74,6 +74,56 @@ export async function publishPackage(
     return publisher.publish(pkgPath, pkg.content, publishOptions);
 }
 
+/**
+ * Repoint the `latest` dist-tag to the just published version if it trails behind.
+ *
+ * npm pins `latest` on a package's first publish regardless of the dist-tag
+ * used, so packages that only ever publish prereleases keep `latest` stuck at
+ * their first version. `latest` cannot be removed, only repointed — so after a
+ * publish, repoint it when it references an **older prerelease**. A `latest`
+ * claimed by a stable release is never touched.
+ *
+ * @returns `true` if the `latest` dist-tag was repointed.
+ */
+export async function correctLatestDistTag(
+    pkg: Package,
+    registryClient: IRegistryClient,
+    options: { registry: string; token?: string },
+): Promise<boolean> {
+    const { name, version } = pkg.content;
+
+    if (!name || !version || !semver.valid(version)) {
+        return false;
+    }
+
+    let latest: string | undefined;
+    try {
+        const packument = await registryClient.getPackument(name, options);
+        latest = packument['dist-tags'] ?
+            packument['dist-tags'].latest :
+            undefined;
+    } catch (e) {
+        if (isRegistryError(e) && e.statusCode === 404) {
+            return false;
+        }
+
+        throw e;
+    }
+
+    if (
+        !latest ||
+        !semver.valid(latest) ||
+        !semver.prerelease(latest) ||
+        !semver.lt(latest, version)
+    ) {
+        return false;
+    }
+
+    await registryClient.putDistTag(name, 'latest', version, options);
+
+    return true;
+}
+
 function resolveDistTag(
     pkg: Package,
     explicitTag: string | undefined,

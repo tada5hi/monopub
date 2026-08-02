@@ -50,6 +50,16 @@ npx monoship \
 | `--root <root>` | `string` | `process.cwd()` | Directory where the root `package.json` is located. |
 | `--rootPackage` | `boolean` | `true` | Also consider the root package for publishing (skipped if `private: true` or missing `name`/`version`). |
 | `--tag <tag>` | `string` | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version` (e.g. `1.0.0-beta.0` → `beta`). Stable versions default to `latest`. |
+| `--no-fixLatest` | `boolean` | `false` | Disable the automatic [`latest` dist-tag correction](#latest-dist-tag-correction). |
+
+### `latest` Dist-Tag Correction
+
+npm pins the `latest` dist-tag on a package's **first** publish, even when publishing under a different dist-tag (e.g. `beta`).
+Without correction, a default `npm install` would serve that first prerelease forever, while subsequent publishes only move the prerelease tag.
+
+After each successful publish, monoship checks the package's `latest` dist-tag: if it points at an **older prerelease**
+(i.e. `latest` was never claimed by a stable release), it is repointed to the just published version.
+A `latest` that points at a stable release is never touched. Opt out with `--no-fixLatest`.
 
 ## Authentication
 
@@ -100,6 +110,7 @@ Or with OIDC trusted publishing (no token needed):
 | `registry` | No | `https://registry.npmjs.org/` | Registry URL to publish to. |
 | `root-package` | No | `true` | Also consider the root package for publishing. |
 | `tag` | No | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version`. Stable versions default to `latest`. |
+| `fix-latest` | No | `true` | Repoint the `latest` dist-tag to the newly published version when it trails behind an older prerelease. |
 | `dry-run` | No | `false` | Show what would be published without actually publishing. |
 
 ## Programmatic API
@@ -127,6 +138,7 @@ The `publish()` function returns an array of `Package` objects for each successf
 | `token` | `string` | — | Auth token (wrapped in `MemoryTokenProvider` internally). |
 | `rootPackage` | `boolean` | `true` | Include the root package as a publish candidate. |
 | `tag` | `string` | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version`. |
+| `fixLatest` | `boolean` | `true` | Repoint the `latest` dist-tag to the newly published version when it trails behind an older prerelease. |
 | `dryRun` | `boolean` | `false` | Resolve dependencies and check versions without actually publishing. |
 | `fileSystem` | `IFileSystem` | `NodeFileSystem` | File system adapter. |
 | `registryClient` | `IRegistryClient` | `HapicRegistryClient` | Registry metadata adapter. |
