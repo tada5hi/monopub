@@ -13,17 +13,15 @@
     <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#mark)"/>
     <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#shine)"/>
 
-    <!-- the workspace: an open crate holding many packages -->
-    <g stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="8.2">
-        <path d="M30 66v20a8 8 0 0 0 8 8h44a8 8 0 0 0 8-8V66"/>
-        <!-- only what the registry is missing leaves the crate -->
-        <path d="M60 58V26"/>
-        <path d="M45 41 60 26 75 41"/>
+    <!-- the cargo: one container per workspace package -->
+    <g fill="#ffffff">
+        <rect x="36" y="54" width="20" height="18" rx="4"/>
+        <rect x="64" y="54" width="20" height="18" rx="4"/>
+        <rect x="50" y="32" width="20" height="18" rx="4"/>
     </g>
 
-    <g fill="#ffffff">
-        <circle cx="47" cy="80" r="3.4"/>
-        <circle cx="60" cy="80" r="3.4"/>
-        <circle cx="73" cy="80" r="3.4"/>
-    </g>
+    <!-- the hull -->
+    <path d="M26 78h68l-11 17a5 5 0 0 1-4 2H41a5 5 0 0 1-4-2z" fill="#ffffff"/>
+
+    <path d="M20 106q8-6 16 0t16 0 16 0 16 0 16 0" stroke="#ffffff" stroke-opacity="0.5" stroke-width="4.5" stroke-linecap="round"/>
 </svg>
