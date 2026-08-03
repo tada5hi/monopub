@@ -101,6 +101,23 @@ Rules:
 - `module.ts` provides defaults for adapters not passed in `PublishOptions`
 - **Never use `vi.mock`** in tests — inject memory adapters instead
 
+## Writing Style
+
+Applies to every piece of prose the project ships: `README.md`, `AGENTS.md`, `.agents/*.md`, code comments,
+commit messages, issue and pull request bodies.
+
+**Avoid the em dash (`—`) and the en dash (`–`).** Rewrite the sentence rather than swapping in a hyphen:
+
+| Instead of a dash | Use |
+|-------------------|-----|
+| Joining two independent clauses | A period, or a semicolon when the link is tight |
+| Introducing an explanation or expansion | A colon |
+| Setting off a parenthetical aside | Parentheses, or a pair of commas |
+| Marking an empty table cell (e.g. a `Default` column) | The word `none` |
+
+Prefer short declarative sentences over long ones stitched together with dashes. The rule is about the
+character, not the thought: if a sentence only works with a dash, it is usually two sentences.
+
 ## Commit Convention
 
 Commits follow **Conventional Commits** via `@tada5hi/commitlint-config`:

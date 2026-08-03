@@ -5,7 +5,7 @@
 <h1 align="center">monoship</h1>
 
 <p align="center">
-    <b>Publish npm workspace packages — only the ones the registry is missing.</b><br>
+    <b>Publish npm workspace packages: only the ones the registry is missing.</b><br>
     monoship checks every workspace package against the registry, resolves <code>workspace:</code><br>
     dependencies to real versions, and publishes just what is not there yet.
 </p>
@@ -37,16 +37,16 @@
 
 In a monorepo, only some packages change per release. Running `npm publish` everywhere fails loudly on the
 ones that are already out there; running it selectively means hand-maintaining a list. monoship asks the
-registry instead: whatever version is not published yet gets published, everything else is skipped — which
+registry instead: whatever version is not published yet gets published, everything else is skipped. That
 makes it a natural companion to [release-please](https://github.com/googleapis/release-please), where the
 version bumps are already decided for you.
 
-- **Registry-driven** — publishability is derived from registry metadata, not from git diffs or config.
-- **`workspace:` aware** — `workspace:*`, `workspace:^` and `workspace:~` are rewritten to concrete versions before packing.
-- **Tokenless in CI** — OIDC trusted publishing is auto-detected in GitHub Actions, with `NODE_AUTH_TOKEN` as fallback.
-- **`latest` that stays honest** — the `latest` dist-tag is repointed when it is stuck on an older prerelease.
-- **Native `npm publish`** — shells out to the npm CLI when available (provenance, OIDC, `.npmrc`), falls back to [libnpmpublish](https://www.npmjs.com/package/libnpmpublish) otherwise.
-- **Hexagonal & testable** — every side effect sits behind a port with a memory adapter, so the library runs without network or disk.
+- **Registry-driven.** Publishability is derived from registry metadata, not from git diffs or config.
+- **`workspace:` aware.** `workspace:*`, `workspace:^` and `workspace:~` are rewritten to concrete versions before packing.
+- **Tokenless in CI.** OIDC trusted publishing is auto-detected in GitHub Actions, with `NODE_AUTH_TOKEN` as fallback.
+- **`latest` that stays honest.** The `latest` dist-tag is repointed when it is stuck on an older prerelease.
+- **Native `npm publish`.** Shells out to the npm CLI when available (provenance, OIDC, `.npmrc`), falls back to [libnpmpublish](https://www.npmjs.com/package/libnpmpublish) otherwise.
+- **Hexagonal & testable.** Every side effect sits behind a port with a memory adapter, so the library runs without network or disk.
 
 ## How it works
 
@@ -78,7 +78,7 @@ the registry which of the resulting packages it does not know yet:
 @acme/client   1.3.0   published, dependencies[@acme/core] -> ^1.2.0
 ```
 
-Only packages the registry has no answer for are published — either a `404` for the package itself, or a
+Only packages the registry has no answer for are published: either a `404` for the package itself, or a
 packument without that exact version. Everything else is left untouched, so the command is safe to run on
 every push.
 
@@ -91,7 +91,7 @@ A `workspace:` range is rewritten to the version of the package it points at, ke
 | `workspace:~`, `workspace:~1.0.0` | `~1.2.0` |
 
 A package never reaches the registry check at all when it is `private: true`, when `name` or `version` is
-missing, or when it depends on a `workspace:` package that is not part of the repository — the last case is
+missing, or when it depends on a `workspace:` package that is not part of the repository. That last case is
 reported as a warning rather than silently dropped.
 
 The dist-tag is derived from the version itself: `1.4.0-beta.1` publishes under `beta`, a stable version
@@ -152,13 +152,13 @@ Three authentication methods, resolved in this order:
 
 | # | Method | When it applies |
 |---|--------|-----------------|
-| 1 | **`--token` CLI flag** | An explicit npm access token is given — used as-is, OIDC is bypassed. |
+| 1 | **`--token` CLI flag** | An explicit npm access token is given. Used as-is, OIDC is bypassed. |
 | 2 | **OIDC trusted publishing** | No `--token`, and GitHub Actions OIDC env vars are present. Falls back to `NODE_AUTH_TOKEN` on failure. |
 | 3 | **`NODE_AUTH_TOKEN`** | Default fallback. |
 
 ### OIDC Trusted Publishing
 
-When running in GitHub Actions with [trusted publishers](https://docs.npmjs.com/trusted-publishers/) configured, the tool automatically detects the OIDC environment and exchanges short-lived, per-package tokens with the npm registry — no long-lived `NPM_TOKEN` secret required.
+When running in GitHub Actions with [trusted publishers](https://docs.npmjs.com/trusted-publishers/) configured, the tool automatically detects the OIDC environment and exchanges short-lived, per-package tokens with the npm registry. No long-lived `NPM_TOKEN` secret is required.
 
 **Requirements:**
 - npm trusted publisher configured for each package on [npmjs.com](https://www.npmjs.com)
@@ -193,7 +193,7 @@ Or with OIDC trusted publishing (no token needed):
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `token` | No | — | npm auth token. Optional when using OIDC trusted publishing. |
+| `token` | No | none | npm auth token. Optional when using OIDC trusted publishing. |
 | `registry` | No | `https://registry.npmjs.org/` | Registry URL to publish to. |
 | `root-package` | No | `true` | Also consider the root package for publishing. |
 | `tag` | No | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version`. Stable versions default to `latest`. |
@@ -223,7 +223,7 @@ The `publish()` function returns an array of `Package` objects for each successf
 |--------|------|---------|-------------|
 | `cwd` | `string` | `process.cwd()` | Root directory of the monorepo. |
 | `registry` | `string` | `https://registry.npmjs.org/` | Registry URL. |
-| `token` | `string` | — | Auth token (wrapped in `MemoryTokenProvider` internally). |
+| `token` | `string` | none | Auth token (wrapped in `MemoryTokenProvider` internally). |
 | `rootPackage` | `boolean` | `true` | Include the root package as a publish candidate. |
 | `tag` | `string` | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version`. |
 | `fixLatest` | `boolean` | `true` | Repoint the `latest` dist-tag to the newly published version when it trails behind an older prerelease. |
@@ -236,7 +236,7 @@ The `publish()` function returns an array of `Package` objects for each successf
 
 ### Custom Adapters
 
-The library uses a hexagonal architecture — all external I/O is behind port interfaces, making it fully testable and extensible:
+The library uses a hexagonal architecture: all external I/O is behind port interfaces, making it fully testable and extensible.
 
 ```typescript
 import {
@@ -272,7 +272,7 @@ Available port interfaces and their adapters:
 
 ### GitHub Actions (with npm token)
 
-Use with [release-please](https://github.com/googleapis/release-please) — it bumps versions and creates release PRs, then monoship handles the actual publishing:
+Use with [release-please](https://github.com/googleapis/release-please): it bumps versions and creates release PRs, then monoship handles the actual publishing.
 
 ```yaml
 on:
@@ -306,7 +306,7 @@ jobs:
 
 ### GitHub Actions (with OIDC Trusted Publishing)
 
-No npm token secrets needed — configure [trusted publishers](https://docs.npmjs.com/trusted-publishers/) on npmjs.com for each package instead:
+No npm token secrets needed. Configure [trusted publishers](https://docs.npmjs.com/trusted-publishers/) on npmjs.com for each package instead.
 
 ```yaml
 on:
