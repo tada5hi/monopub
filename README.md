@@ -1,24 +1,101 @@
-# monoship 📦
+<p align="center">
+    <img src=".github/assets/logo.svg" alt="monoship" width="120" height="120">
+</p>
 
-[![npm version](https://badge.fury.io/js/monoship.svg)](https://badge.fury.io/js/monoship)
-[![CI](https://github.com/Tada5hi/monoship/workflows/CI/badge.svg)](https://github.com/Tada5hi/monoship)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+<h1 align="center">monoship</h1>
 
-A CLI tool and library for publishing packages from npm workspaces to registries (npmjs.org, GitHub Packages, etc.).
-It determines which workspace packages haven't been published yet by checking each package's version against the registry,
-and publishes only what's needed — making it ideal for CI/CD pipelines alongside [release-please](https://github.com/googleapis/release-please).
+<p align="center">
+    <b>Publish npm workspace packages — only the ones the registry is missing.</b><br>
+    monoship checks every workspace package against the registry, resolves <code>workspace:</code><br>
+    dependencies to real versions, and publishes just what is not there yet.
+</p>
 
-When npm >= 10.0.0 is available, it shells out to `npm publish` directly (supporting OIDC, provenance, etc. out of the box).
-Otherwise it falls back to [libnpmpublish](https://www.npmjs.com/package/libnpmpublish) / [libnpmpack](https://www.npmjs.com/package/libnpmpack).
+<p align="center">
+    <a href="https://npmjs.com/package/monoship"><img src="https://badge.fury.io/js/monoship.svg" alt="npm version"></a>
+    <a href="https://github.com/Tada5hi/monoship/actions/workflows/main.yml"><img src="https://github.com/Tada5hi/monoship/workflows/CI/badge.svg" alt="CI"></a>
+    <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
-**Table of Contents**
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Authentication](#authentication)
-- [GitHub Action](#github-action)
-- [Programmatic API](#programmatic-api)
-- [CI](#ci)
+<p align="center">
+    <a href="#installation"><b>Installation</b></a>
+    ·
+    <a href="#usage">Usage</a>
+    ·
+    <a href="#authentication">Authentication</a>
+    ·
+    <a href="#github-action">GitHub Action</a>
+    ·
+    <a href="#programmatic-api">API</a>
+    ·
+    <a href="#ci">CI</a>
+</p>
+
+---
+
+## Why
+
+In a monorepo, only some packages change per release. Running `npm publish` everywhere fails loudly on the
+ones that are already out there; running it selectively means hand-maintaining a list. monoship asks the
+registry instead: whatever version is not published yet gets published, everything else is skipped — which
+makes it a natural companion to [release-please](https://github.com/googleapis/release-please), where the
+version bumps are already decided for you.
+
+- **Registry-driven** — publishability is derived from registry metadata, not from git diffs or config.
+- **`workspace:` aware** — `workspace:*`, `workspace:^` and `workspace:~` are rewritten to concrete versions before packing.
+- **Tokenless in CI** — OIDC trusted publishing is auto-detected in GitHub Actions, with `NODE_AUTH_TOKEN` as fallback.
+- **`latest` that stays honest** — the `latest` dist-tag is repointed when it is stuck on an older prerelease.
+- **Native `npm publish`** — shells out to the npm CLI when available (provenance, OIDC, `.npmrc`), falls back to [libnpmpublish](https://www.npmjs.com/package/libnpmpublish) otherwise.
+- **Hexagonal & testable** — every side effect sits behind a port with a memory adapter, so the library runs without network or disk.
+
+## How it works
+
+Given a monorepo whose root declares its workspaces:
+
+```json
+{
+    "workspaces": ["packages/*"]
+}
+```
+
+and a package depending on a sibling through the `workspace:` protocol:
+
+```json
+{
+    "name": "@acme/client",
+    "version": "1.3.0",
+    "dependencies": {
+        "@acme/core": "workspace:^"
+    }
+}
+```
+
+`monoship` expands the globs, resolves the protocol against the versions found in the repository, and asks
+the registry which of the resulting packages it does not know yet:
+
+```
+@acme/core     1.2.0   skipped, already published
+@acme/client   1.3.0   published, dependencies[@acme/core] -> ^1.2.0
+```
+
+Only packages the registry has no answer for are published — either a `404` for the package itself, or a
+packument without that exact version. Everything else is left untouched, so the command is safe to run on
+every push.
+
+A `workspace:` range is rewritten to the version of the package it points at, keeping its own range operator:
+
+| Declared | Rewritten to |
+|----------|--------------|
+| `workspace:*` | `1.2.0` |
+| `workspace:^`, `workspace:^1.0.0` | `^1.2.0` |
+| `workspace:~`, `workspace:~1.0.0` | `~1.2.0` |
+
+A package never reaches the registry check at all when it is `private: true`, when `name` or `version` is
+missing, or when it depends on a `workspace:` package that is not part of the repository — the last case is
+reported as a warning rather than silently dropped.
+
+The dist-tag is derived from the version itself: `1.4.0-beta.1` publishes under `beta`, a stable version
+under `latest`. An explicit `--tag` or a `publishConfig.tag` takes precedence.
 
 ## Requirements
 
@@ -41,6 +118,13 @@ npx monoship \
   --rootPackage
 ```
 
+Nothing is published without asking the registry first, so the command is safe to run on every push.
+Use `--dryRun` to print the plan instead of executing it:
+
+```bash
+npx monoship --dryRun
+```
+
 ### Options
 
 | Option | Type | Default | Description |
@@ -51,6 +135,7 @@ npx monoship \
 | `--rootPackage` | `boolean` | `true` | Also consider the root package for publishing (skipped if `private: true` or missing `name`/`version`). |
 | `--tag <tag>` | `string` | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version` (e.g. `1.0.0-beta.0` → `beta`). Stable versions default to `latest`. |
 | `--fixLatest` | `boolean` | `true` | Automatic [`latest` dist-tag correction](#latest-dist-tag-correction). Disable with `--no-fixLatest`. |
+| `--dryRun` | `boolean` | `false` | Show what would be published without actually publishing. |
 
 ### `latest` Dist-Tag Correction
 
@@ -63,11 +148,13 @@ A `latest` that points at a stable release is never touched. Opt out with `--no-
 
 ## Authentication
 
-The tool supports three authentication methods, resolved in the following order:
+Three authentication methods, resolved in this order:
 
-1. **`--token` CLI flag** — Explicit npm access token, used as-is.
-2. **OIDC Trusted Publishing** — Tokenless publishing via GitHub Actions OIDC (auto-detected when no `--token` flag is given). Falls back to `NODE_AUTH_TOKEN` if OIDC fails.
-3. **`NODE_AUTH_TOKEN` environment variable** — Default fallback.
+| # | Method | When it applies |
+|---|--------|-----------------|
+| 1 | **`--token` CLI flag** | An explicit npm access token is given — used as-is, OIDC is bypassed. |
+| 2 | **OIDC trusted publishing** | No `--token`, and GitHub Actions OIDC env vars are present. Falls back to `NODE_AUTH_TOKEN` on failure. |
+| 3 | **`NODE_AUTH_TOKEN`** | Default fallback. |
 
 ### OIDC Trusted Publishing
 
@@ -112,6 +199,7 @@ Or with OIDC trusted publishing (no token needed):
 | `tag` | No | Auto-detected | Dist-tag to publish under. Overrides the prerelease identifier auto-detected from `version`. Stable versions default to `latest`. |
 | `fix-latest` | No | `true` | Repoint the `latest` dist-tag to the newly published version when it trails behind an older prerelease. |
 | `dry-run` | No | `false` | Show what would be published without actually publishing. |
+| `node-version` | No | `24` | Node.js version to set up. Set to an empty string to use the existing installation. |
 
 ## Programmatic API
 
@@ -144,7 +232,7 @@ The `publish()` function returns an array of `Package` objects for each successf
 | `registryClient` | `IRegistryClient` | `HapicRegistryClient` | Registry metadata adapter. |
 | `publisher` | `IPackagePublisher` | Auto-detected | Publisher adapter (npm CLI or libnpmpublish). |
 | `tokenProvider` | `ITokenProvider` | `EnvTokenProvider` | Token resolution adapter (overrides `token`). |
-| `logger` | `ILogger` | — | Logger adapter. |
+| `logger` | `ILogger` | `NoopLogger` | Logger adapter. |
 
 ### Custom Adapters
 

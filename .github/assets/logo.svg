@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="monoship">
+    <defs>
+        <linearGradient id="mark" x1="4" y1="116" x2="116" y2="4" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#4f46e5"/>
+            <stop offset="1" stop-color="#22d3ee"/>
+        </linearGradient>
+        <linearGradient id="shine" x1="60" y1="4" x2="60" y2="74" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+            <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+    </defs>
+
+    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#mark)"/>
+    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#shine)"/>
+
+    <!-- the workspace: an open crate holding many packages -->
+    <g stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="8.2">
+        <path d="M30 66v20a8 8 0 0 0 8 8h44a8 8 0 0 0 8-8V66"/>
+        <!-- only what the registry is missing leaves the crate -->
+        <path d="M60 58V26"/>
+        <path d="M45 41 60 26 75 41"/>
+    </g>
+
+    <g fill="#ffffff">
+        <circle cx="47" cy="80" r="3.4"/>
+        <circle cx="60" cy="80" r="3.4"/>
+        <circle cx="73" cy="80" r="3.4"/>
+    </g>
+</svg>
